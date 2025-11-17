@@ -11,9 +11,43 @@
     <link rel="stylesheet" href="styles.css">
 
     <script type="module" src="https://unpkg.com/@material/web@1.0.0/all.js?module"></script>
+    
+    <style>
+        /* Makes input fields fill the row nicely */
+        md-filled-text-field {
+            width: 100%; 
+            margin-bottom: 10px;
+        }
+        /* Ensures the FAB stays fixed in the corner */
+        md-fab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 1000;
+        }
+        /* Basic layout for the input row */
+        .input-row {
+            display: flex; 
+            gap: 10px; 
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        @media (min-width: 600px) {
+             /* On desktop, let inputs share space */
+            .input-row md-filled-text-field {
+                flex: 1;
+                margin-bottom: 0;
+            }
+        }
+    </style>
 </head>
 <body>
-        <img src="thhd_logo.png" alt="The Hills Have Dice Club Logo" class="club-logo">
+    <img src="thhd_logo.png" alt="The Hills Have Dice Club Logo" class="club-logo">
+    
+    <div style="position: absolute; top: 10px; right: 10px;">
+        <md-text-button onclick="resetName()">Change Name</md-text-button>
+    </div>
+
     <h1>The Hills Have Dice</h1>
     <h2>19 November @ The Black Bee</h2>
     <h1>Game Sign Up</h1>
@@ -22,11 +56,11 @@
     <div class="input-row">
         <md-filled-text-field id="hostName" label="Your Name (Host)"></md-filled-text-field>
         <md-filled-text-field id="gameName" label="Game Name"></md-filled-text-field>
-        <md-filled-text-field id="maxPlayers" label="Max Players"></md-filled-text-field>
+        <md-filled-text-field id="maxPlayers" label="Max Players" type="number"></md-filled-text-field>
         <md-filled-button id="postGameBtn">Post Game</md-filled-button>
     </div>
     
-    <div style="text-align: center; margin-bottom: 2rem;">
+    <div style="text-align: center; margin-bottom: 2rem; margin-top: 1rem;">
         <md-outlined-button id="clearAllBtn" style="--md-sys-color-primary: #f44336; color: #f44336;">Clear All Games (Admin)</md-outlined-button>
     </div>
 
@@ -54,80 +88,111 @@
         let games = {};
         
         // =========================================================
-        // COMMENT SYSTEM FUNCTIONS (FIXED)
+        // 1. USER IDENTITY (LOCAL STORAGE)
+        // =========================================================
+        function getUserName() {
+            let name = localStorage.getItem('thhd_username');
+            if (!name) {
+                name = prompt("Please enter your name (this will be saved):");
+                if (name && name.trim() !== "") {
+                    localStorage.setItem('thhd_username', name.trim());
+                    // Auto-fill host input if empty
+                    const hostInput = document.getElementById('hostName');
+                    if (hostInput && !hostInput.value) {
+                        hostInput.value = name.trim();
+                    }
+                }
+            }
+            return name;
+        }
+
+        function resetName() {
+            localStorage.removeItem('thhd_username');
+            document.getElementById('hostName').value = "";
+            alert("Name cleared! You will be asked to identify yourself next time.");
+        }
+
+        // On Load: Fill host name if known
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedName = localStorage.getItem('thhd_username');
+            if (savedName) {
+                document.getElementById('hostName').value = savedName;
+            }
+        });
+
+        // =========================================================
+        // 2. COMMENT SYSTEM
         // =========================================================
 
         function updateCommentCount(key) {
             const countRef = ref(db, `games/${key}/comments`);
             const badgeElement = document.getElementById(`comment-count-${key}`);
+            // Find the icon within the button container
+            const container = document.getElementById(`comment-container-${key}`);
+            if(!container) return;
             
-            // This is now robustly found using the badge's ID
-            const buttonIcon = badgeElement.previousElementSibling.querySelector('md-icon'); 
+            const buttonIcon = container.querySelector('md-icon'); 
 
             onValue(countRef, snapshot => {
                 const comments = snapshot.val();
                 const count = comments ? Object.keys(comments).length : 0;
                 
-                badgeElement.textContent = count;
-
-                if (count > 0) {
-                    badgeElement.style.display = 'inline-block';
-                    // Only change the icon to 'chat_bubble' (filled) if the section is closed
-                    if (document.getElementById(`comments-${key}`).style.display !== 'block') {
-                        buttonIcon.textContent = 'chat_bubble'; 
-                    }
-                } else {
-                    badgeElement.style.display = 'none';
-                    buttonIcon.textContent = 'chat_bubble_outline'; 
+                if (badgeElement) {
+                    badgeElement.textContent = count;
+                    badgeElement.style.display = count > 0 ? 'inline-block' : 'none';
                 }
-                
+
+                // Update icon style based on count/state
                 const commentsSection = document.getElementById(`comments-${key}`);
-                if (commentsSection && commentsSection.style.display === 'block') {
-                     loadComments(key);
+                const isOpen = commentsSection && commentsSection.style.display === 'block';
+
+                if (buttonIcon && !isOpen) {
+                    buttonIcon.textContent = count > 0 ? 'chat_bubble' : 'chat_bubble_outline'; 
                 }
             });
         }
 
         function toggleComments(key) {
-             // FIX: Find elements using the key instead of relying on DOM traversal from 'onclick'
             const commentsSection = document.getElementById(`comments-${key}`);
-            const badgeContainer = document.getElementById(`comment-container-${key}`);
-            const button = badgeContainer.querySelector('md-icon-button');
+            const container = document.getElementById(`comment-container-${key}`);
+            const button = container.querySelector('md-icon-button');
 
             const isExpanded = commentsSection.style.display === 'block';
             
             commentsSection.style.display = isExpanded ? 'none' : 'block';
-            
             button.setAttribute('aria-expanded', !isExpanded);
             
-            // Ensure the icon is the filled one when open
+            // Icon logic
+            const icon = button.querySelector('md-icon');
             if (!isExpanded) {
-                button.querySelector('md-icon').textContent = 'chat_bubble'; 
+                // Opening
+                icon.textContent = 'chat_bubble'; 
                 loadComments(key); 
             } else {
-                 // Restore icon based on count if closing the panel
-                 updateCommentCount(key); 
+                // Closing - reset based on count via updateCommentCount
+                updateCommentCount(key); 
             }
         }
         
         function postComment(key) {
              const inputField = document.getElementById(`comment-input-${key}`);
              const comment = inputField.value.trim();
-             const userName = prompt("Enter your name for the comment:");
+             
+             // Use new helper
+             const userName = getUserName();
              
              if (!comment || !userName) return;
 
              push(ref(db, 'games/' + key + '/comments'), { 
-                user: userName, 
-                text: comment, 
-                timestamp: Date.now() 
+                 user: userName, 
+                 text: comment, 
+                 timestamp: Date.now() 
              })
              .then(() => {
-                inputField.value = '';
-                // Listeners handle updates
+                 inputField.value = '';
              })
              .catch(error => {
-                alert("Error posting comment: " + error.message);
+                 alert("Error posting comment: " + error.message);
              });
         }
         
@@ -146,7 +211,11 @@
                 const sortedComments = Object.values(comments).sort((a, b) => a.timestamp - b.timestamp);
 
                 sortedComments.forEach(c => {
-                    const date = new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    // Better date formatting
+                    const date = new Date(c.timestamp).toLocaleString([], { 
+                        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+                    });
+                    
                     const commentElement = document.createElement('div');
                     commentElement.className = 'comment-entry';
                     commentElement.innerHTML = `
@@ -155,15 +224,19 @@
                     `;
                     commentsListDiv.appendChild(commentElement);
                 });
+                
+                // Scroll to bottom
+                commentsListDiv.scrollTop = commentsListDiv.scrollHeight;
             }); 
         }
 
         // =========================================================
-        // CORE GAME LOGIC (Restored)
+        // 3. GAME LOGIC
         // =========================================================
 
         function addGame() {
-            const host = document.getElementById('hostName').value.trim();
+            const hostInput = document.getElementById('hostName');
+            const host = hostInput.value.trim();
             const name = document.getElementById('gameName').value.trim();
             const max = parseInt(document.getElementById('maxPlayers').value);
 
@@ -171,15 +244,19 @@
                 alert("Please fill in ALL fields with valid positive numbers!");
                 return;
             }
+            
+            // Update stored name if they typed it manually
+            localStorage.setItem('thhd_username', host);
 
             const newGameRef = push(ref(db, 'games'));
 
             set(newGameRef, { name, max, host, players: {} })
                 .then(() => {
                     const gameKey = newGameRef.key;
+                    // Add host as first player
                     push(ref(db, 'games/' + gameKey + '/players'), host)
                         .then(() => {
-                            document.getElementById('hostName').value = "";
+                            // Clear game details but keep host name
                             document.getElementById('gameName').value = "";
                             document.getElementById('maxPlayers').value = "";
                             alert(`Game "${name}" posted successfully!`);
@@ -191,19 +268,13 @@
         }
         
         function joinGame(key) {
-            const player = prompt("Enter your name:");
+            const player = getUserName();
             if (!player) return;
 
             const gameRef = ref(db, 'games/' + key);
             get(gameRef).then(snapshot => {
                 const game = snapshot.val();
-                
                 const players = game.players ? Object.values(game.players) : [];
-
-                if (player.toLowerCase() === game.host.toLowerCase()) {
-                    alert("The host is automatically signed up!");
-                    return;
-                }
 
                 if (players.includes(player)) {
                     alert("You're already signed up!");
@@ -219,7 +290,7 @@
         }
 
         function leaveGame(key) {
-            const player = prompt("Enter your name to leave:");
+            const player = getUserName();
             if (!player) return;
 
             const gameRef = ref(db, 'games/' + key);
@@ -227,7 +298,7 @@
                 const game = snapshot.val();
                 
                 if (player.toLowerCase() === game.host.toLowerCase()) {
-                     alert("The host cannot leave a game they posted. Use the 'Delete' button to cancel the game instead.");
+                     alert("The host cannot leave. Use 'Delete' to cancel the game.");
                      return;
                 }
 
@@ -243,164 +314,73 @@
                     playerSnapshot.forEach(childSnap => {
                         remove(ref(db, 'games/' + key + '/players/' + childSnap.key));
                     });
-
-                    alert("You have left the game.");
                 });
             });
         }
         
         function deleteGame(key, hostName) {
-            const confirmer = prompt("Enter your name to confirm deletion of this game:");
+            const currentUser = getUserName();
+            if (!currentUser) return;
             
-            if (!confirmer) return;
-            
-            if (confirmer.toLowerCase() !== hostName.toLowerCase()) {
+            if (currentUser.toLowerCase() !== hostName.toLowerCase()) {
                 alert("Only the host (" + hostName + ") can delete this game.");
                 return;
             }
 
             if (confirm(`Are you sure you want to cancel the game: ${games[key].name}?`)) {
                 remove(ref(db, 'games/' + key))
-                    .then(() => {
-                        alert("Game deleted successfully.");
-                    })
-                    .catch(error => {
-                        alert("Error deleting game: " + error.message);
-                    });
+                    .catch(error => alert("Error deleting: " + error.message));
             }
         }
         
         function clearAllGames() {
             const SECRET_CODE = "admin123"; 
+            const input = prompt("Enter secret code:");
             
-            const input = prompt("Enter the secret code to clear ALL games:");
-            
-            if (!input || input !== SECRET_CODE) {
-                alert("Invalid code. Clear All operation cancelled.");
-                return;
-            }
-            
-            if (confirm("WARNING: This will delete ALL games. Are you sure you want to clear the list?")) {
-                remove(ref(db, 'games'))
-                    .then(() => {
-                        alert("All games cleared successfully.");
-                    })
-                    .catch(error => {
-                        alert("Error clearing games: " + error.message);
-                    });
+            if (input === SECRET_CODE) {
+                if (confirm("WARNING: Delete ALL games?")) {
+                    remove(ref(db, 'games'));
+                }
+            } else if (input) {
+                alert("Invalid code.");
             }
         }
 
-
-        // Update the games list in real-time
+        // =========================================================
+        // 4. REALTIME RENDERING (NO FLICKER)
+        // =========================================================
+        
         const gamesList = document.getElementById('gamesList');
+        
         onValue(ref(db, 'games'), snapshot => {
-            games = snapshot.val() || {}; 
+            // 1. SNAPSHOT STATE
+            const openSections = new Set();
+            document.querySelectorAll('.comments-section').forEach(section => {
+                if (section.style.display === 'block') {
+                    openSections.add(section.id.replace('comments-', ''));
+                }
+            });
+
+            games = snapshot.val() || {};
             gamesList.innerHTML = "";
 
+            // 2. REDRAW UI
             for (let key in games) {
                 const g = games[key];
                 const card = document.createElement('md-elevated-card');
 
                 const players = g.players ? Object.values(g.players) : [];
                 const progress = players.length / g.max;
-
                 const isFull = progress >= 1;
-                const statusText = isFull ? 'FULL' : 'Open Slots';
-                const iconName = isFull ? 'lock' : 'groups'; 
                 
-                let color = "#4caf50"; 
-                if (isFull) color = "#f44336"; 
-                else if (progress >= 0.7) color = "#ff9800"; 
+                let color = "#4caf50";
+                if (isFull) color = "#f44336";
+                else if (progress >= 0.7) color = "#ff9800";
                 
                 card.style.setProperty('--md-linear-progress-track-color', color);
                 card.style.setProperty('--md-linear-progress-active-indicator-color', color);
 
-
                 card.innerHTML = `
                     <div class="card-content">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <div style="font-weight:bold; font-size:1.1rem;">${g.name}</div>
-                            
-                            <div id="comment-container-${key}" style="position: relative; display: inline-block;"> 
-                                <md-icon-button 
-                                    onclick="toggleComments('${key}')" 
-                                    aria-expanded="false" 
-                                    aria-controls="comments-${key}"
-                                >
-                                    <md-icon>chat_bubble_outline</md-icon>
-                                </md-icon-button>
-                                
-                                <span id="comment-count-${key}" class="comment-badge" style="display: none;">0</span>
-                            </div>
-
-                        </div>
-                        
-                        <div style="font-size: 0.95rem; color: #777;">Hosted by: ${g.host}</div>
-                        
-                        <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
-                            <md-icon style="color: ${color}; font-size: 20px;">
-                                ${iconName}
-                            </md-icon>
-                            <div style="font-weight: 500;">Max Players: ${g.max} (${statusText})</div>
-                        </div>
-
-                        <div class="players">Players: ${players.length ? players.join(", ") : "None yet"}</div>
-                        
-                        <md-linear-progress value="${progress}" buffer="1" style="margin-top:0.5rem;"></md-linear-progress>
-                        
-                        <div id="comments-${key}" class="comments-section" style="display: none; border-top: 1px solid #eee; padding-top: 1rem; margin-top: 1rem;">
-                            <h3 style="font-size: 1rem; margin-top: 0;">Discussion</h3>
-                            <div id="comments-list-${key}" style="max-height: 150px; overflow-y: auto; margin-bottom: 12px; padding: 8px; background-color: #fcfcfc; border-radius: 4px; border: 1px solid #ddd;">
-                                <p style="color: #999; margin: 0;">Click the chat icon to load discussion...</p>
-                            </div>
-                            
-                            <md-filled-text-field id="comment-input-${key}" label="Add a comment" style="width: 100%;"></md-filled-text-field>
-                            <md-filled-tonal-button style="margin-top: 8px;" onclick="postComment('${key}')">
-                                Post Comment
-                            </md-filled-tonal-button>
-                        </div>
-
-                        <div style="margin-top: 1rem;">
-                            <md-filled-tonal-button onclick="joinGame('${key}')">Join</md-filled-tonal-button>
-                            <md-outlined-button onclick="leaveGame('${key}')">Leave</md-outlined-button>
-                            
-                            <md-outlined-button 
-                                onclick="deleteGame('${key}', '${g.host}')" 
-                                style="margin-left: 1rem; --md-sys-color-primary: #f44336; color: #f44336;"
-                            >
-                                Delete
-                            </md-outlined-button>
-                        </div>
-                    </div>
-                `;
-                gamesList.appendChild(card);
-                
-                updateCommentCount(key); 
-            }
-        });
-
-        // Bind buttons
-        document.getElementById('postGameBtn').addEventListener('click', addGame);
-        document.getElementById('clearAllBtn').addEventListener('click', clearAllGames);
-
-
-        // Expose globally
-        window.updateCommentCount = updateCommentCount;
-        window.toggleComments = toggleComments;
-        window.postComment = postComment;
-        window.addGame = addGame;
-        window.joinGame = joinGame;
-        window.leaveGame = leaveGame;
-        window.deleteGame = deleteGame;
-        window.clearAllGames = clearAllGames;
-    </script>
-</body>
-</html>
-
-
-
-
-
-
-
+                            <div style="font-weight:bold; font-size:1.1rem;">${g.
