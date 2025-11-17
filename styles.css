@@ -163,3 +163,35 @@ md-outlined-button {
         flex-direction: column;
     }
 }
+
+/* Add to styles.css */
+
+/* Fix input widths */
+md-filled-text-field {
+    width: 100%; 
+    margin-bottom: 10px;
+}
+
+/* Layout for input row */
+.input-row {
+    display: flex; 
+    gap: 10px; 
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+/* Fix floating button position */
+md-fab {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1000;
+}
+
+/* Responsive tweak for desktop */
+@media (min-width: 600px) {
+    .input-row md-filled-text-field {
+        flex: 1;
+        margin-bottom: 0;
+    }
+}
