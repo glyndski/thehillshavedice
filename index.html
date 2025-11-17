@@ -12,34 +12,6 @@
 
     <script type="module" src="https://unpkg.com/@material/web@1.0.0/all.js?module"></script>
     
-    <style>
-        /* Makes input fields fill the row nicely */
-        md-filled-text-field {
-            width: 100%; 
-            margin-bottom: 10px;
-        }
-        /* Ensures the FAB stays fixed in the corner */
-        md-fab {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            z-index: 1000;
-        }
-        /* Basic layout for the input row */
-        .input-row {
-            display: flex; 
-            gap: 10px; 
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        @media (min-width: 600px) {
-             /* On desktop, let inputs share space */
-            .input-row md-filled-text-field {
-                flex: 1;
-                margin-bottom: 0;
-            }
-        }
-    </style>
 </head>
 <body>
     <img src="thhd_logo.png" alt="The Hills Have Dice Club Logo" class="club-logo">
@@ -384,3 +356,4 @@
                     <div class="card-content">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                             <div style="font-weight:bold; font-size:1.1rem;">${g.
+
