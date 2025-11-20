@@ -1,46 +1,42 @@
 /* styles.css */
 
-/* Define CSS Variables for Reusability (Optional but good practice) */
 :root {
-    --primary-color: #5A554A;       /* Dark brown/olive from logo text */
-    --accent-color: #A2B79A;        /* Light green from mountains */
-    --background-color: #F9F8F5;    /* Off-white from logo's outer ring */
-    --card-background: #FFFFFF;     /* Pure white for card to stand out subtly */
-    --text-dark: #333333;           /* Dark grey for general text */
-    --text-medium: #777777;         /* Medium grey for secondary text */
-    --danger-color: #f44336;        /* Keep red for alerts */
-    --warning-color: #ff9800;       /* Keep orange for warnings */
+    --primary-color: #5A554A;       /* Dark brown/olive */
+    --accent-color: #A2B79A;        /* Light green */
+    --background-color: #F9F8F5;    /* Off-white */
+    --card-background: #FFFFFF;     
+    --text-dark: #333333;           
+    --text-medium: #777777;         
+    --danger-color: #f44336;        
 }
-
 
 body {
     font-family: "Roboto", sans-serif;
     max-width: 700px;
     margin: auto;
     padding: 2rem;
-    background-color: var(--background-color); /* Updated background */
+    background-color: var(--background-color); 
     padding-bottom: 80px; 
-    color: var(--text-dark); /* Default text color */
+    color: var(--text-dark); 
 }
 
-/* NEW: Logo Styles */
 .club-logo {
     display: block; 
     margin: 0 auto 20px auto; 
-    max-width: 300px; /* Adjust as needed */
+    max-width: 300px; 
     height: auto;
 }
 
 h1, h2 {
     text-align: center;
-    color: var(--primary-color); /* Updated h1/h2 color */
+    color: var(--primary-color); 
 }
 
 md-elevated-card {
     display: block;
     margin-bottom: 1rem;
-    background-color: var(--card-background); /* Card background */
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Subtle shadow for depth */
+    background-color: var(--card-background); 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
 }
 
 .card-content {
@@ -50,10 +46,10 @@ md-elevated-card {
 .players {
     margin-top: 0.5rem;
     font-size: 0.9rem;
-    color: var(--text-medium); /* Updated players text color */
+    color: var(--text-medium); 
 }
 
-/* Ensure the input row is visible and responsive */
+/* Input Row Layout */
 .input-row {
     display: flex;
     gap: 1rem;
@@ -62,50 +58,43 @@ md-elevated-card {
     flex-wrap: wrap;
 }
 
-/* Default Layout for larger screens (Tablet/Desktop) */
 .input-row md-filled-text-field,
 .input-row md-filled-button {
     flex: 1 1 180px;
     box-sizing: border-box;
 }
 
-/* Customize Material Web Components colors */
+/* Material Web Customization */
 md-filled-button {
-    --md-filled-button-container-color: var(--primary-color); /* Post Game Button */
+    --md-filled-button-container-color: var(--primary-color); 
     --md-filled-button-label-text-color: white;
 }
 
 md-filled-tonal-button {
-    --md-filled-tonal-button-container-color: var(--accent-color); /* Join/Post Comment Buttons */
+    --md-filled-tonal-button-container-color: var(--accent-color); 
     --md-filled-tonal-button-label-text-color: var(--primary-color);
 }
 
 md-outlined-button {
-    --md-outlined-button-outline-color: var(--primary-color); /* Leave Button outline */
-    --md-outlined-button-label-text-color: var(--primary-color); /* Leave Button text */
+    --md-outlined-button-outline-color: var(--primary-color); 
+    --md-outlined-button-label-text-color: var(--primary-color); 
 }
 
-/* Special button styles for clear/delete (override the above) */
-#clearAllBtn {
-    --md-sys-color-primary: var(--danger-color); /* Admin Clear All Button */
-    color: var(--danger-color);
-}
-.card-content md-outlined-button[onclick^="deleteGame"] { /* Specific delete button in cards */
+/* Delete Button Style */
+.card-content md-outlined-button[onclick^="deleteGame"] { 
     --md-sys-color-primary: var(--danger-color); 
     color: var(--danger-color);
     --md-outlined-button-outline-color: var(--danger-color);
     --md-outlined-button-label-text-color: var(--danger-color);
 }
 
-
-/* COMMENT COUNTER BADGE STYLES */
+/* Comment Badge */
 .comment-badge {
     position: absolute;
     top: 0; 
     right: 0; 
     transform: translate(30%, -30%); 
-    
-    background-color: var(--danger-color); /* Red notification color */
+    background-color: var(--danger-color); 
     color: white;
     font-size: 0.7rem;
     font-weight: 700;
@@ -119,7 +108,6 @@ md-outlined-button {
     z-index: 10;
 }
 
-/* Comment Section Styling */
 .comment-entry {
     border-bottom: 1px dashed #eee;
     padding: 4px 0;
@@ -129,42 +117,6 @@ md-outlined-button {
 .comment-entry:last-child {
     border-bottom: none; 
 }
-#gamesList .comments-section #comments-list {
-    background-color: var(--logo-off-white); /* Lighter background for comment list */
-    border-color: var(--logo-beige); /* Subtle border color */
-}
-
-
-/* HIDE the Floating Action Button */
-#postGameFab {
-    display: none; /* Keep it hidden */
-    /* original positioning */
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 1000;
-}
-
-/* MEDIA QUERY for Small Screens (Phones) */
-@media (max-width: 600px) {
-    body {
-        padding: 1rem;
-        padding-bottom: 80px;
-    }
-    
-    .input-row md-filled-text-field,
-    .input-row md-filled-button {
-        flex: 1 1 100%;
-        margin-bottom: 0.5rem;
-    }
-
-    .input-row {
-        gap: 0;
-        flex-direction: column;
-    }
-}
-
-/* Add to styles.css */
 
 /* Fix input widths */
 md-filled-text-field {
@@ -172,15 +124,7 @@ md-filled-text-field {
     margin-bottom: 10px;
 }
 
-/* Layout for input row */
-.input-row {
-    display: flex; 
-    gap: 10px; 
-    flex-wrap: wrap;
-    align-items: center;
-}
-
-/* Fix floating button position */
+/* Floating Action Button */
 md-fab {
     position: fixed;
     bottom: 24px;
@@ -188,7 +132,23 @@ md-fab {
     z-index: 1000;
 }
 
-/* Responsive tweak for desktop */
+/* Responsive Tweaks */
+@media (max-width: 600px) {
+    body {
+        padding: 1rem;
+        padding-bottom: 80px;
+    }
+    .input-row {
+        gap: 0;
+        flex-direction: column;
+    }
+    .input-row md-filled-text-field,
+    .input-row md-filled-button {
+        flex: 1 1 100%;
+        margin-bottom: 0.5rem;
+    }
+}
+
 @media (min-width: 600px) {
     .input-row md-filled-text-field {
         flex: 1;
