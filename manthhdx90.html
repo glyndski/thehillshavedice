@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard - THHD</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
+    <script type="module" src="https://unpkg.com/@material/web@1.0.0/all.js?module"></script>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Admin specific tweaks */
+        body { border-top: 5px solid #f44336; } /* Red top border to remind you this is Admin */
+        .login-container {
+            max-width: 400px; margin: 100px auto; padding: 2rem;
+            background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 8px;
+            text-align: center;
+        }
+        .admin-controls { display: none; } /* Hidden until logged in */
+    </style>
+</head>
+<body>
+
+    <div id="loginScreen" class="login-container">
+        <h2>Admin Login</h2>
+        <md-filled-text-field id="adminEmail" label="Email" type="email"></md-filled-text-field>
+        <md-filled-text-field id="adminPass" label="Password" type="password"></md-filled-text-field>
+        <br><br>
+        <md-filled-button onclick="adminLogin()">Login</md-filled-button>
+        <p id="loginError" style="color: red; margin-top: 1rem;"></p>
+    </div>
+
+    <div id="dashboard" class="admin-controls">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1>Admin Dashboard</h1>
+            <md-text-button onclick="adminLogout()">Logout</md-text-button>
+        </div>
+
+        <div style="background: #ffebee; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; border: 1px solid #ef9a9a;">
+            <h3 style="margin-top:0; color: #c62828;">Danger Zone</h3>
+            <md-filled-button onclick="wipeEverything()" style="--md-sys-color-primary: #c62828;">
+                <md-icon slot="icon">delete_forever</md-icon>
+                Wipe ALL Games
+            </md-filled-button>
+        </div>
+
+        <h2>Active Games</h2>
+        <div id="adminGamesList"></div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+    <script>
+        // YOUR CONFIG
+        const firebaseConfig = {
+            apiKey: "AIzaSyAjRxDf55tgjwGlW8vPWPeX5pmo80IdQIo",
+            authDomain: "the-hills-have-dice-67561.firebaseapp.com",
+            databaseURL: "https://the-hills-have-dice-67561-default-rtdb.firebaseio.com",
+            projectId: "the-hills-have-dice-67561",
+            storageBucket: "the-hills-have-dice-67561.firebasestorage.app",
+            messagingSenderId: "504957236565",
+            appId: "1:504957236565:web:9df153cbd6d0c5633cabdc"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
+
+        // 1. AUTH LISTENER
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                loadGames();
+            } else {
+                document.getElementById('loginScreen').style.display = 'block';
+                document.getElementById('dashboard').style.display = 'none';
+            }
+        });
+
+        // 2. LOGIN / LOGOUT
+        function adminLogin() {
+            const email = document.getElementById('adminEmail').value;
+            const pass = document.getElementById('adminPass').value;
+            document.getElementById('loginError').innerText = "";
+
+            auth.signInWithEmailAndPassword(email, pass)
+                .catch(error => {
+                    document.getElementById('loginError').innerText = error.message;
+                });
+        }
+
+        function adminLogout() {
+            auth.signOut();
+        }
+
+        // 3. LOAD GAMES (With Delete Buttons)
+        function loadGames() {
+            db.ref('games').on('value', snapshot => {
+                const list = document.getElementById('adminGamesList');
+                list.innerHTML = "";
+                const games = snapshot.val() || {};
+
+                if (Object.keys(games).length === 0) {
+                    list.innerHTML = "<p>No games scheduled.</p>";
+                    return;
+                }
+
+                for (let key in games) {
+                    const g = games[key];
+                    const playerCount = g.players ? Object.keys(g.players).length : 0;
+                    
+                    const item = document.createElement('div');
+                    item.style.cssText = "background: white; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1);";
+                    
+                    item.innerHTML = `
+                        <div>
+                            <div style="font-weight: bold; font-size: 1.1rem;">${g.name}</div>
+                            <div style="color: #666;">Host: ${g.host} | Players: ${playerCount}/${g.max}</div>
+                        </div>
+                        <md-filled-button onclick="forceDelete('${key}', '${g.name}')" style="--md-sys-color-primary: #d32f2f;">
+                            Delete
+                        </md-filled-button>
+                    `;
+                    list.appendChild(item);
+                }
+            });
+        }
+
+        // 4. ACTIONS
+        function forceDelete(key, name) {
+            if(confirm(`ADMIN ACTION: Permanently delete "${name}"?`)) {
+                db.ref('games/' + key).remove()
+                    .then(() => console.log("Deleted"))
+                    .catch(err => alert(err.message));
+            }
+        }
+
+        function wipeEverything() {
+            const check = prompt("Type 'DELETE' to wipe the entire database:");
+            if(check === 'DELETE') {
+                db.ref('games').remove()
+                    .then(() => alert("Database Wiped."))
+                    .catch(err => alert(err.message));
+            }
+        }
+    </script>
+</body>
+</html>
