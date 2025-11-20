@@ -37,20 +37,17 @@
     </div>
 
     <h1>The Hills Have Dice</h1>
-    <h2>10 December @ The Black Bee</h2>
-    <h1>Game Sign Up</h1>
+    <h2>Game Sign Up</h2>
 
     <h2>Add a Game</h2>
     <div class="input-row">
-        <md-filled-text-field id="hostName" label="Your Name (Host)"></md-filled-text-field>
-        <md-filled-text-field id="gameName" label="Game Name"></md-filled-text-field>
+        <md-filled-text-field id="hostName" label="Your Name (Host)" maxlength="30"></md-filled-text-field>
+        <md-filled-text-field id="gameName" label="Game Name" maxlength="50"></md-filled-text-field>
         <md-filled-text-field id="maxPlayers" label="Max Players" type="number"></md-filled-text-field>
         <md-filled-button id="postGameBtn">Post Game</md-filled-button>
     </div>
     
-    <div style="text-align: center; margin-bottom: 2rem; margin-top: 1rem;">
-        <md-outlined-button id="clearAllBtn" style="--md-sys-color-primary: #f44336; color: #f44336;">Clear All Games (Admin)</md-outlined-button>
-    </div>
+    <div style="margin-bottom: 2rem;"></div>
 
     <h2>Upcoming Games</h2>
     <div id="gamesList"></div>
@@ -61,11 +58,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
     <script>
-        // 1. CONFIGURATION (Using the info you provided)
+        // 1. CONFIGURATION
         const firebaseConfig = {
             apiKey: "AIzaSyAjRxDf55tgjwGlW8vPWPeX5pmo80IdQIo",
             authDomain: "the-hills-have-dice-67561.firebaseapp.com",
-            // THIS WAS THE MISSING KEY:
             databaseURL: "https://the-hills-have-dice-67561-default-rtdb.firebaseio.com",
             projectId: "the-hills-have-dice-67561",
             storageBucket: "the-hills-have-dice-67561.firebasestorage.app",
@@ -73,12 +69,12 @@
             appId: "1:504957236565:web:9df153cbd6d0c5633cabdc"
         };
 
-        // 2. INITIALIZE (Classic Global Style)
+        // 2. INITIALIZE
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         let games = {};
 
-        // 3. USER IDENTITY (Remember Me)
+        // 3. USER IDENTITY
         function getUserName() {
             let name = localStorage.getItem('thhd_username');
             if (!name) {
@@ -120,7 +116,6 @@
                     badgeElement.style.display = count > 0 ? 'inline-block' : 'none';
                 }
                 
-                // Update icon style
                 const commentsSection = document.getElementById(`comments-${key}`);
                 const isOpen = commentsSection && commentsSection.style.display === 'block';
                 if (buttonIcon && !isOpen) {
@@ -140,11 +135,9 @@
             
             const icon = button.querySelector('md-icon');
             if (!isExpanded) {
-                // Opening
                 icon.textContent = 'chat_bubble'; 
                 loadComments(key); 
             } else {
-                // Closing
                 updateCommentCount(key); 
             }
         }
@@ -201,10 +194,12 @@
                 alert("Please fill in ALL fields!");
                 return;
             }
-            // Save name since they just typed it
             localStorage.setItem('thhd_username', host);
 
+            // Create a new game reference
             const newGameRef = db.ref('games').push();
+            
+            // We set the data. Note: Once set, the rules prevent changing Host/Name/Max.
             newGameRef.set({ name, max, host, players: {} })
                 .then(() => {
                     const gameKey = newGameRef.key;
@@ -216,7 +211,7 @@
                             alert("Game Posted!");
                         });
                 })
-                .catch(error => alert("Error: " + error.message));
+                .catch(error => alert("Error posting game: " + error.message));
         }
         
         function joinGame(key) {
@@ -246,7 +241,8 @@
             db.ref('games/' + key).once('value').then(snapshot => {
                 const game = snapshot.val();
                 if (player.toLowerCase() === game.host.toLowerCase()) {
-                     alert("Host cannot leave. Delete the game instead.");
+                     // UPDATED: New message since they can't delete
+                     alert("Hosts cannot 'leave' a game. To cancel the event, please contact an Admin to delete the entry.");
                      return;
                 }
                 const playersRef = db.ref('games/' + key + '/players');
@@ -262,30 +258,16 @@
             });
         }
         
+        // UPDATED: This function now just alerts the user
         function deleteGame(key, hostName) {
-            const currentUser = getUserName();
-            if (!currentUser) return;
-            if (currentUser.toLowerCase() !== hostName.toLowerCase()) {
-                alert("Only the host (" + hostName + ") can delete this.");
-                return;
-            }
-            if (confirm(`Delete game: ${games[key].name}?`)) {
-                db.ref('games/' + key).remove();
-            }
-        }
-        
-        function clearAllGames() {
-            const code = prompt("Enter secret code:");
-            if (code === "admin123" && confirm("Delete ALL games?")) {
-                db.ref('games').remove();
-            }
+            alert("For security, games can only be deleted by an Admin. Please contact the club organizer to remove this entry.");
         }
 
-        // 6. REALTIME LISTENER (NO FLICKER)
+        // 6. REALTIME LISTENER
         const gamesList = document.getElementById('gamesList');
         
         db.ref('games').on('value', snapshot => {
-            // A. Capture open windows
+            // Capture open windows
             const openSections = new Set();
             document.querySelectorAll('.comments-section').forEach(section => {
                 if (section.style.display === 'block') {
@@ -296,16 +278,16 @@
             games = snapshot.val() || {};
             gamesList.innerHTML = "";
 
-            // B. Draw Cards
+            // Draw Cards
             for (let key in games) {
                 const g = games[key];
-                const card = document.createElement('md-elevated-card');
                 const players = g.players ? Object.values(g.players) : [];
                 const progress = players.length / g.max;
                 const isFull = progress >= 1;
                 
                 let color = isFull ? "#f44336" : (progress >= 0.7 ? "#ff9800" : "#4caf50");
                 
+                const card = document.createElement('md-elevated-card');
                 card.style.setProperty('--md-linear-progress-track-color', color);
                 card.style.setProperty('--md-linear-progress-active-indicator-color', color);
 
@@ -346,7 +328,7 @@
                 `;
                 gamesList.appendChild(card);
                 
-                // C. Restore open windows
+                // Restore open windows
                 if (openSections.has(key)) {
                     const section = document.getElementById(`comments-${key}`);
                     const iconBtn = document.querySelector(`#comment-container-${key} md-icon-button`);
@@ -363,7 +345,6 @@
 
         // 7. BIND BUTTONS
         document.getElementById('postGameBtn').addEventListener('click', addGame);
-        document.getElementById('clearAllBtn').addEventListener('click', clearAllGames);
         document.getElementById('postGameFab').addEventListener('click', () => {
              window.scrollTo({ top: 0, behavior: 'smooth' });
              document.getElementById('hostName').focus();
@@ -371,4 +352,3 @@
     </script>
 </body>
 </html>
-
