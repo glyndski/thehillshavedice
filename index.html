@@ -2,58 +2,62 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Dashboard - THHD</title>
+    <title>Game Booking - The Hills Have Dice</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <script type="module" src="https://unpkg.com/@material/web@1.0.0/all.js?module"></script>
     <link rel="stylesheet" href="styles.css">
+
     <style>
-        /* Admin specific tweaks */
-        body { border-top: 5px solid #f44336; } /* Red top border to remind you this is Admin */
-        .login-container {
-            max-width: 400px; margin: 100px auto; padding: 2rem;
-            background: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 8px;
-            text-align: center;
+        /* CRITICAL STYLES for layout */
+        md-filled-text-field { width: 100%; margin-bottom: 10px; }
+        .input-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        md-fab { position: fixed; bottom: 24px; right: 24px; z-index: 1000; }
+        @media (min-width: 600px) { .input-row md-filled-text-field { flex: 1; margin-bottom: 0; } }
+        
+        /* Comment Section Styles */
+        .comment-entry { font-size: 0.9rem; border-bottom: 1px solid #eee; padding: 4px 0; }
+        .comment-entry:last-child { border-bottom: none; }
+        .comment-badge {
+            position: absolute; top: -4px; right: -4px;
+            background: #d32f2f; color: white; font-size: 10px;
+            padding: 2px 5px; border-radius: 10px; font-weight: bold;
         }
-        .admin-controls { display: none; } /* Hidden until logged in */
     </style>
 </head>
 <body>
 
-    <div id="loginScreen" class="login-container">
-        <h2>Admin Login</h2>
-        <md-filled-text-field id="adminEmail" label="Email" type="email"></md-filled-text-field>
-        <md-filled-text-field id="adminPass" label="Password" type="password"></md-filled-text-field>
-        <br><br>
-        <md-filled-button onclick="adminLogin()">Login</md-filled-button>
-        <p id="loginError" style="color: red; margin-top: 1rem;"></p>
+    <img src="thhd_logo.png" alt="The Hills Have Dice Club Logo" class="club-logo" style="max-width: 150px; display: block; margin: 0 auto;">
+    
+    <div style="position: absolute; top: 10px; right: 10px;">
+        <md-text-button onclick="resetName()">Change Name</md-text-button>
     </div>
 
-    <div id="dashboard" class="admin-controls">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h1>Admin Dashboard</h1>
-            <md-text-button onclick="adminLogout()">Logout</md-text-button>
-        </div>
+    <h1>The Hills Have Dice</h1>
+    
+    <h2 id="dynamic-event-header">Loading Event Info...</h2>
 
-        <div style="background: #ffebee; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; border: 1px solid #ef9a9a;">
-            <h3 style="margin-top:0; color: #c62828;">Danger Zone</h3>
-            <md-filled-button onclick="wipeEverything()" style="--md-sys-color-primary: #c62828;">
-                <md-icon slot="icon">delete_forever</md-icon>
-                Wipe ALL Games
-            </md-filled-button>
-        </div>
-
-        <h2>Active Games</h2>
-        <div id="adminGamesList"></div>
+    <h2>Add a Game</h2>
+    <div class="input-row">
+        <md-filled-text-field id="hostName" label="Your Name (Host)" maxlength="30"></md-filled-text-field>
+        <md-filled-text-field id="gameName" label="Game Name" maxlength="50"></md-filled-text-field>
+        <md-filled-text-field id="maxPlayers" label="Max Players" type="number"></md-filled-text-field>
+        <md-filled-button id="postGameBtn">Post Game</md-filled-button>
     </div>
+    
+    <div style="margin-bottom: 2rem;"></div>
+
+    <h2>Upcoming Games</h2>
+    <div id="gamesList"></div>
+
+    <md-fab id="postGameFab" label="Post Game" extended="true" icon="add"></md-fab>
 
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
     <script>
-        // 1. YOUR CORRECT CONFIGURATION
-        // I removed the "import" statements so it works directly in the browser
+        // 1. CONFIGURATION (Original Working Key)
         const firebaseConfig = {
             apiKey: "AIzaSyAjRxDf55tgjwGlW8vPWPeX5pmo80IdQIo",
             authDomain: "the-hills-have-dice-67561.firebaseapp.com",
@@ -64,88 +68,285 @@
             appId: "1:504957236565:web:9df153cbd6d0c5633cabdc"
         };
 
+        // 2. INITIALIZE
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const auth = firebase.auth();
+        let games = {};
 
-        // 2. AUTH LISTENER
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('dashboard').style.display = 'block';
-                loadGames();
+        // 3. NEW: EVENT HEADER LISTENER
+        const headerElement = document.getElementById('dynamic-event-header');
+        db.ref('eventDetails/message').on('value', snapshot => {
+            if (snapshot.exists()) {
+                headerElement.innerText = snapshot.val();
             } else {
-                document.getElementById('loginScreen').style.display = 'block';
-                document.getElementById('dashboard').style.display = 'none';
+                headerElement.innerText = "Upcoming Event TBD";
             }
         });
 
-        // 3. LOGIN / LOGOUT
-        function adminLogin() {
-            const email = document.getElementById('adminEmail').value;
-            const pass = document.getElementById('adminPass').value;
-            document.getElementById('loginError').innerText = "";
-
-            auth.signInWithEmailAndPassword(email, pass)
-                .catch(error => {
-                    document.getElementById('loginError').innerText = error.message;
-                });
-        }
-
-        function adminLogout() {
-            auth.signOut();
-        }
-
-        // 4. LOAD GAMES (With Delete Buttons)
-        function loadGames() {
-            db.ref('games').on('value', snapshot => {
-                const list = document.getElementById('adminGamesList');
-                list.innerHTML = "";
-                const games = snapshot.val() || {};
-
-                if (Object.keys(games).length === 0) {
-                    list.innerHTML = "<p>No games scheduled.</p>";
-                    return;
+        // 4. USER IDENTITY
+        function getUserName() {
+            let name = localStorage.getItem('thhd_username');
+            if (!name) {
+                name = prompt("Please enter your name (this will be saved):");
+                if (name && name.trim() !== "") {
+                    localStorage.setItem('thhd_username', name.trim());
+                    const hostInput = document.getElementById('hostName');
+                    if (hostInput && !hostInput.value) hostInput.value = name.trim();
                 }
+            }
+            return name;
+        }
 
-                for (let key in games) {
-                    const g = games[key];
-                    const playerCount = g.players ? Object.keys(g.players).length : 0;
-                    
-                    const item = document.createElement('div');
-                    item.style.cssText = "background: white; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1);";
-                    
-                    item.innerHTML = `
-                        <div>
-                            <div style="font-weight: bold; font-size: 1.1rem;">${g.name}</div>
-                            <div style="color: #666;">Host: ${g.host} | Players: ${playerCount}/${g.max}</div>
-                        </div>
-                        <md-filled-button onclick="forceDelete('${key}', '${g.name}')" style="--md-sys-color-primary: #d32f2f;">
-                            Delete
-                        </md-filled-button>
-                    `;
-                    list.appendChild(item);
+        function resetName() {
+            localStorage.removeItem('thhd_username');
+            document.getElementById('hostName').value = "";
+            alert("Name cleared! Next action will ask for your name.");
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedName = localStorage.getItem('thhd_username');
+            if (savedName) document.getElementById('hostName').value = savedName;
+        });
+
+        // 5. COMMENT LOGIC
+        function updateCommentCount(key) {
+            const countRef = db.ref(`games/${key}/comments`);
+            const badgeElement = document.getElementById(`comment-count-${key}`);
+            const container = document.getElementById(`comment-container-${key}`);
+            if(!container) return;
+            const buttonIcon = container.querySelector('md-icon'); 
+
+            countRef.on('value', snapshot => {
+                const comments = snapshot.val();
+                const count = comments ? Object.keys(comments).length : 0;
+                
+                if (badgeElement) {
+                    badgeElement.textContent = count;
+                    badgeElement.style.display = count > 0 ? 'inline-block' : 'none';
+                }
+                const commentsSection = document.getElementById(`comments-${key}`);
+                const isOpen = commentsSection && commentsSection.style.display === 'block';
+                if (buttonIcon && !isOpen) {
+                    buttonIcon.textContent = count > 0 ? 'chat_bubble' : 'chat_bubble_outline'; 
                 }
             });
         }
 
-        // 5. ACTIONS
-        function forceDelete(key, name) {
-            if(confirm(`ADMIN ACTION: Permanently delete "${name}"?`)) {
-                db.ref('games/' + key).remove()
-                    .then(() => console.log("Deleted"))
-                    .catch(err => alert(err.message));
+        function toggleComments(key) {
+            const commentsSection = document.getElementById(`comments-${key}`);
+            const container = document.getElementById(`comment-container-${key}`);
+            const button = container.querySelector('md-icon-button');
+            const isExpanded = commentsSection.style.display === 'block';
+            
+            commentsSection.style.display = isExpanded ? 'none' : 'block';
+            button.setAttribute('aria-expanded', !isExpanded);
+            
+            const icon = button.querySelector('md-icon');
+            if (!isExpanded) {
+                icon.textContent = 'chat_bubble'; 
+                loadComments(key); 
+            } else {
+                updateCommentCount(key); 
             }
+        }
+        
+        function postComment(key) {
+             const inputField = document.getElementById(`comment-input-${key}`);
+             const comment = inputField.value.trim();
+             const userName = getUserName();
+             
+             if (!comment || !userName) return;
+
+             db.ref('games/' + key + '/comments').push({ 
+                 user: userName, 
+                 text: comment, 
+                 timestamp: Date.now() 
+             })
+             .then(() => { inputField.value = ''; })
+             .catch(error => alert("Error: " + error.message));
+        }
+        
+        function loadComments(key) {
+            const commentsListDiv = document.getElementById(`comments-list-${key}`);
+            
+            db.ref('games/' + key + '/comments').once('value').then(snapshot => {
+                const comments = snapshot.val();
+                commentsListDiv.innerHTML = "";
+                
+                if (!comments) {
+                    commentsListDiv.innerHTML = '<p style="color: #999; margin: 0;">No comments yet. Be the first!</p>';
+                    return;
+                }
+                const sortedComments = Object.values(comments).sort((a, b) => a.timestamp - b.timestamp);
+                sortedComments.forEach(c => {
+                    const date = new Date(c.timestamp).toLocaleString([], { 
+                        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+                    });
+                    const div = document.createElement('div');
+                    div.className = 'comment-entry';
+                    div.innerHTML = `<strong>${c.user}</strong> <span style="color:#888;font-size:0.8em">(${date})</span><p style="margin:2px 0 8px 0;">${c.text}</p>`;
+                    commentsListDiv.appendChild(div);
+                });
+                commentsListDiv.scrollTop = commentsListDiv.scrollHeight;
+            }); 
         }
 
-        function wipeEverything() {
-            const check = prompt("Type 'DELETE' to wipe the entire database:");
-            if(check === 'DELETE') {
-                db.ref('games').remove()
-                    .then(() => alert("Database Wiped."))
-                    .catch(err => alert(err.message));
+        // 6. GAME LOGIC
+        function addGame() {
+            const hostInput = document.getElementById('hostName');
+            const host = hostInput.value.trim();
+            const name = document.getElementById('gameName').value.trim();
+            const max = parseInt(document.getElementById('maxPlayers').value);
+
+            if (!host || !name || isNaN(max) || max <= 0) {
+                alert("Please fill in ALL fields!");
+                return;
             }
+            localStorage.setItem('thhd_username', host);
+
+            const newGameRef = db.ref('games').push();
+            newGameRef.set({ name, max, host, players: {} })
+                .then(() => {
+                    const gameKey = newGameRef.key;
+                    db.ref('games/' + gameKey + '/players').push(host)
+                        .then(() => {
+                            document.getElementById('gameName').value = "";
+                            document.getElementById('maxPlayers').value = "";
+                            alert("Game Posted!");
+                        });
+                })
+                .catch(error => alert("Error: " + error.message));
         }
+        
+        function joinGame(key) {
+            const player = getUserName();
+            if (!player) return;
+
+            db.ref('games/' + key).once('value').then(snapshot => {
+                const game = snapshot.val();
+                const players = game.players ? Object.values(game.players) : [];
+
+                if (players.includes(player)) {
+                    alert("You're already signed up!");
+                    return;
+                }
+                if (players.length < game.max) {
+                    db.ref('games/' + key + '/players').push(player);
+                } else {
+                    alert("Game is full!");
+                }
+            });
+        }
+
+        function leaveGame(key) {
+            const player = getUserName();
+            if (!player) return;
+
+            db.ref('games/' + key).once('value').then(snapshot => {
+                const game = snapshot.val();
+                if (player.toLowerCase() === game.host.toLowerCase()) {
+                     alert("Hosts cannot 'leave' a game. To cancel the event, please contact an Admin to delete the entry.");
+                     return;
+                }
+                const playersRef = db.ref('games/' + key + '/players');
+                playersRef.orderByValue().equalTo(player).once('value').then(playerSnapshot => {
+                    if (!playerSnapshot.exists()) {
+                        alert("You are not signed up.");
+                        return;
+                    }
+                    playerSnapshot.forEach(childSnap => {
+                        childSnap.ref.remove();
+                    });
+                });
+            });
+        }
+        
+        function deleteGame(key, hostName) {
+            alert("For security, games can only be deleted by an Admin. Please contact the club organizer to remove this entry.");
+        }
+
+        // 7. REALTIME LISTENER
+        const gamesList = document.getElementById('gamesList');
+        
+        db.ref('games').on('value', snapshot => {
+            const openSections = new Set();
+            document.querySelectorAll('.comments-section').forEach(section => {
+                if (section.style.display === 'block') {
+                    openSections.add(section.id.replace('comments-', ''));
+                }
+            });
+
+            games = snapshot.val() || {};
+            gamesList.innerHTML = "";
+
+            for (let key in games) {
+                const g = games[key];
+                const players = g.players ? Object.values(g.players) : [];
+                const progress = players.length / g.max;
+                const isFull = progress >= 1;
+                
+                let color = isFull ? "#f44336" : (progress >= 0.7 ? "#ff9800" : "#4caf50");
+                
+                const card = document.createElement('md-elevated-card');
+                card.style.setProperty('--md-linear-progress-track-color', color);
+                card.style.setProperty('--md-linear-progress-active-indicator-color', color);
+
+                card.innerHTML = `
+                    <div class="card-content">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="font-weight:bold; font-size:1.1rem;">${g.name}</div>
+                            <div id="comment-container-${key}" style="position: relative; display: inline-block;"> 
+                                <md-icon-button onclick="toggleComments('${key}')" aria-expanded="false">
+                                    <md-icon>chat_bubble_outline</md-icon>
+                                </md-icon-button>
+                                <span id="comment-count-${key}" class="comment-badge" style="display: none;">0</span>
+                            </div>
+                        </div>
+                        <div style="font-size: 0.95rem; color: #777;">Hosted by: ${g.host}</div>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                            <md-icon style="color: ${color}; font-size: 20px;">${isFull ? 'lock' : 'groups'}</md-icon>
+                            <div style="font-weight: 500;">Max Players: ${g.max} (${isFull ? 'FULL' : 'Open Slots'})</div>
+                        </div>
+                        <div class="players">Players: ${players.length ? players.join(", ") : "None yet"}</div>
+                        <md-linear-progress value="${progress}" buffer="1" style="margin-top:0.5rem;"></md-linear-progress>
+                        
+                        <div id="comments-${key}" class="comments-section" style="display: none; border-top: 1px solid #eee; padding-top: 1rem; margin-top: 1rem;">
+                            <h3 style="font-size: 1rem; margin-top: 0;">Discussion</h3>
+                            <div id="comments-list-${key}" style="max-height: 150px; overflow-y: auto; margin-bottom: 12px; padding: 8px; background-color: #fcfcfc; border-radius: 4px; border: 1px solid #ddd;">
+                                <p style="color: #999; margin: 0;">Loading...</p>
+                            </div>
+                            <md-filled-text-field id="comment-input-${key}" label="Add a comment" style="width: 100%;"></md-filled-text-field>
+                            <md-filled-tonal-button style="margin-top: 8px;" onclick="postComment('${key}')">Post Comment</md-filled-tonal-button>
+                        </div>
+
+                        <div style="margin-top: 1rem;">
+                            <md-filled-tonal-button onclick="joinGame('${key}')">Join</md-filled-tonal-button>
+                            <md-outlined-button onclick="leaveGame('${key}')">Leave</md-outlined-button>
+                            <md-outlined-button onclick="deleteGame('${key}', '${g.host}')" style="margin-left: 1rem; --md-sys-color-primary: #f44336; color: #f44336;">Delete</md-outlined-button>
+                        </div>
+                    </div>
+                `;
+                gamesList.appendChild(card);
+                
+                if (openSections.has(key)) {
+                    const section = document.getElementById(`comments-${key}`);
+                    const iconBtn = document.querySelector(`#comment-container-${key} md-icon-button`);
+                    if(section) {
+                        section.style.display = 'block';
+                        iconBtn.setAttribute('aria-expanded', 'true');
+                        iconBtn.querySelector('md-icon').textContent = 'chat_bubble';
+                        loadComments(key);
+                    }
+                }
+                updateCommentCount(key);
+            }
+        });
+
+        document.getElementById('postGameBtn').addEventListener('click', addGame);
+        document.getElementById('postGameFab').addEventListener('click', () => {
+             window.scrollTo({ top: 0, behavior: 'smooth' });
+             document.getElementById('hostName').focus();
+        });
     </script>
 </body>
 </html>
