@@ -314,4 +314,36 @@
                         <div id="comments-${key}" class="comments-section" style="display: none;">
                             <h3 style="font-size: 0.9rem; margin-top: 0; margin-bottom: 8px;">Discussion</h3>
                             <div id="comments-list-${key}" style="max-height: 150px; overflow-y: auto; margin-bottom: 12px;">
-                                <p style="color
+                                <p style="color: #999;">Loading...</p>
+                            </div>
+                            <div style="display:flex; gap:8px; align-items:center;">
+                                <md-filled-text-field id="comment-input-${key}" label="Comment" style="flex:1"></md-filled-text-field>
+                                <md-icon-button onclick="postComment('${key}')">
+                                    <md-icon>send</md-icon>
+                                </md-icon-button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                gamesList.appendChild(card);
+                
+                if (openSections.has(key)) {
+                    const section = document.getElementById(`comments-${key}`);
+                    if(section) {
+                        section.style.display = 'block';
+                        card.querySelector(`#comment-container-${key} md-icon`).textContent = 'chat_bubble';
+                        loadComments(key);
+                    }
+                }
+                updateCommentCount(key);
+            }
+        });
+
+        document.getElementById('postGameBtn').addEventListener('click', addGame);
+        document.getElementById('postGameFab').addEventListener('click', () => {
+             window.scrollTo({ top: 0, behavior: 'smooth' });
+             document.getElementById('hostName').focus();
+        });
+    </script>
+</body>
+</html>
