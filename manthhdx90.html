@@ -53,12 +53,13 @@
         <h2>Active Games</h2>
         <div id="adminGamesList"></div>
     </div>
+
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
     <script>
-        // YOUR CONFIG
+        // 1. CONFIGURATION (Original Working Key)
         const firebaseConfig = {
             apiKey: "AIzaSyAjRxDf55tgjwGlW8vPWPeX5pmo80IdQIo",
             authDomain: "the-hills-have-dice-67561.firebaseapp.com",
@@ -73,7 +74,7 @@
         const db = firebase.database();
         const auth = firebase.auth();
 
-        // 1. AUTH LISTENER
+        // 2. AUTH LISTENER
         auth.onAuthStateChanged(user => {
             if (user) {
                 document.getElementById('loginScreen').style.display = 'none';
@@ -85,7 +86,7 @@
             }
         });
 
-        // 2. LOGIN / LOGOUT
+        // 3. LOGIN / LOGOUT
         function adminLogin() {
             const email = document.getElementById('adminEmail').value;
             const pass = document.getElementById('adminPass').value;
@@ -101,7 +102,24 @@
             auth.signOut();
         }
 
-        // 3. LOAD GAMES (With Delete Buttons)
+        // 4. DASHBOARD LOGIC
+        
+        // A. Handle Header Updates
+        function updateEventHeader() {
+           const msg = document.getElementById('eventTextInput').value;
+           db.ref('eventDetails').set({ message: msg })
+             .then(() => alert("Header Updated!"))
+             .catch(e => alert(e.message));
+        }
+        
+        // Load current header
+        db.ref('eventDetails/message').on('value', snapshot => {
+            if(snapshot.exists()) {
+                document.getElementById('eventTextInput').value = snapshot.val();
+            }
+        });
+
+        // B. Load Games List
         function loadGames() {
             db.ref('games').on('value', snapshot => {
                 const list = document.getElementById('adminGamesList');
@@ -134,7 +152,7 @@
             });
         }
 
-        // 4. ACTIONS
+        // C. Delete Actions
         function forceDelete(key, name) {
             if(confirm(`ADMIN ACTION: Permanently delete "${name}"?`)) {
                 db.ref('games/' + key).remove()
@@ -153,10 +171,4 @@
         }
     </script>
 </body>
-
 </html>
-
-
-
-
-
