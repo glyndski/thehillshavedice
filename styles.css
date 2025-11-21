@@ -1,48 +1,48 @@
-/* styles.css - Material Design 3 Refresh */
+/* styles.css */
 
-/* 1. THEME VARIABLES (Olive & Earth Palette) */
+/* ... KEEP YOUR EXISTING ROOT VARIABLES ... */
 :root {
     /* Core Colors */
     --md-sys-color-primary: #556b2f;            /* Club Olive */
     --md-sys-color-on-primary: #ffffff;         
-    --md-sys-color-primary-container: #dce8c6;  /* Light Olive */
+    --md-sys-color-primary-container: #dce8c6;  
     --md-sys-color-on-primary-container: #151f05;
     
-    --md-sys-color-secondary: #5d5f53;          /* Earthy Grey */
+    --md-sys-color-secondary: #5d5f53;          
     --md-sys-color-secondary-container: #e2e4d6;
     --md-sys-color-on-secondary-container: #1a1c14;
 
-    --md-sys-color-tertiary: #386666;           /* Muted Teal (Accent) */
+    --md-sys-color-tertiary: #386666;           
     --md-sys-color-tertiary-container: #bbebec;
 
-    --md-sys-color-error: #ba1a1a;              /* Standard Error Red */
+    --md-sys-color-error: #ba1a1a;              
     --md-sys-color-on-error: #ffffff;
     
-    /* Backgrounds & Surfaces */
-    --md-sys-color-background: #fdfdf5;         /* Cream/Off-white background */
-    --md-sys-color-on-background: #1a1c18;      /* Dark Grey Text */
+    /* Backgrounds */
+    --md-sys-color-background: #fdfdf5;         
+    --md-sys-color-on-background: #1a1c18;      
     
     --md-sys-color-surface: #fdfdf5;            
-    --md-sys-color-surface-container-low: #f2f4ea; /* Card Background */
+    --md-sys-color-surface-container-low: #f2f4ea; 
     --md-sys-color-on-surface: #1a1c18;
-    --md-sys-color-on-surface-variant: #44483d;    /* Subtext color */
-    --md-sys-color-outline: #75796b;            /* Borders */
+    --md-sys-color-on-surface-variant: #44483d;    
+    --md-sys-color-outline: #75796b;            
 
-    /* Shapes (Roundness) */
+    /* Shapes */
     --md-elevated-card-container-shape: 20px;
     --md-filled-button-container-shape: 20px;
     --md-filled-text-field-container-shape: 12px 12px 0 0;
 }
 
-/* 2. GLOBAL LAYOUT */
+/* ... KEEP GLOBAL LAYOUT ... */
 body {
     font-family: 'Roboto', system-ui, sans-serif;
     background-color: var(--md-sys-color-background);
     color: var(--md-sys-color-on-background);
     margin: 0;
     padding: 2rem;
-    padding-bottom: 100px; /* Space for FAB */
-    max-width: 1200px; /* Wider layout for grid */
+    padding-bottom: 100px; 
+    max-width: 1200px; 
     margin-left: auto;
     margin-right: auto;
 }
@@ -75,32 +75,46 @@ h2 {
     filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
 }
 
-/* 3. INPUT SECTION */
+/* 3. UPDATED INPUT SECTION (Fixed Alignment) */
 .input-container {
     background-color: var(--md-sys-color-surface-container-low);
     padding: 1.5rem;
     border-radius: 24px;
     margin-bottom: 3rem;
-    max-width: 800px;
+    max-width: 900px; /* Slightly wider for the new time field */
     margin-left: auto;
     margin-right: auto;
 }
 
 .input-row {
-    display: grid;
-    grid-template-columns: 1fr 2fr 1fr auto; /* Host | Game Name | Max | Button */
+    display: flex; /* Switched to Flex for better alignment control */
     gap: 12px;
+    align-items: start; /* Aligns tops of boxes */
+    flex-wrap: wrap;
+}
+
+/* Flex sizing for inputs */
+.input-host { flex: 1 1 150px; }
+.input-game { flex: 2 1 200px; }
+.input-time { flex: 0 1 110px; } /* Narrow time field */
+.input-max  { flex: 0 1 80px; }  /* Narrow max field */
+.input-btn  { flex: 0 1 auto; height: 56px; }
+
+/* Toggle Switch Row */
+.toggle-row {
+    margin-top: 12px;
+    display: flex;
     align-items: center;
+    gap: 10px;
+    color: var(--md-sys-color-secondary);
+    font-size: 0.9rem;
+    padding-left: 4px;
 }
 
-md-filled-text-field {
-    width: 100%;
-}
-
-/* 4. GAME CARDS GRID (Masonry-style) */
+/* 4. GAME CARDS */
 #gamesList {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); /* Responsive Grid */
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
     gap: 20px;
 }
 
@@ -110,7 +124,7 @@ md-elevated-card {
 }
 
 md-elevated-card:hover {
-    transform: translateY(-2px); /* Subtle lift on hover */
+    transform: translateY(-2px);
     box-shadow: 0 6px 10px rgba(0,0,0,0.1);
 }
 
@@ -122,7 +136,7 @@ md-elevated-card:hover {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 12px;
+    margin-bottom: 4px;
 }
 
 .game-title {
@@ -132,14 +146,37 @@ md-elevated-card:hover {
     line-height: 1.2;
 }
 
-.host-name {
+.host-line {
     font-size: 0.9rem;
     color: var(--md-sys-color-primary);
     font-weight: 500;
-    margin-bottom: 4px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-/* Player Chips */
+/* NEW: Beginner Badge */
+.badge-beginner {
+    background-color: #c2e7ff;
+    color: #004a77;
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+/* NEW: Time Badge */
+.badge-time {
+    background-color: var(--md-sys-color-secondary-container);
+    color: var(--md-sys-color-on-secondary-container);
+    font-size: 0.85rem;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
 .chip-container {
     display: flex;
     flex-wrap: wrap;
@@ -148,18 +185,16 @@ md-elevated-card:hover {
     margin-bottom: 12px;
 }
 
-/* Footer Actions */
 .card-actions {
     display: flex;
-    justify-content: flex-end; /* Align buttons to right */
+    justify-content: flex-end;
     gap: 8px;
     margin-top: 16px;
     border-top: 1px solid var(--md-sys-color-outline);
     padding-top: 12px;
-    border-color: rgba(117, 121, 107, 0.2); /* Subtle divider */
+    border-color: rgba(117, 121, 107, 0.2);
 }
 
-/* Delete Button Red Override */
 .btn-delete {
     --md-outlined-button-label-text-color: var(--md-sys-color-error);
     --md-outlined-button-outline-color: var(--md-sys-color-error);
@@ -167,7 +202,7 @@ md-elevated-card:hover {
 
 /* Comments */
 .comments-section {
-    background-color: #ffffff; /* Clean white for comments */
+    background-color: #ffffff; 
     border-radius: 12px;
     padding: 12px;
     margin-top: 12px;
@@ -180,7 +215,6 @@ md-elevated-card:hover {
     font-size: 0.9rem;
 }
 
-/* Comment Badge */
 .comment-badge {
     position: absolute;
     top: -5px;
@@ -194,16 +228,19 @@ md-elevated-card:hover {
     z-index: 2;
 }
 
-/* 5. RESPONSIVE TWEAKS */
+/* Mobile */
 @media (max-width: 800px) {
     body { padding: 1rem; padding-bottom: 80px; }
     .input-row {
-        grid-template-columns: 1fr; /* Stack inputs vertically */
+        flex-direction: column; 
+    }
+    .input-host, .input-game, .input-time, .input-max, .input-btn {
+        flex: 1 1 100%;
+        width: 100%;
     }
     h1 { font-size: 2rem; }
 }
 
-/* FAB Position */
 md-fab {
     position: fixed;
     bottom: 24px;
