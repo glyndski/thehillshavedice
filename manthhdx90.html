@@ -46,7 +46,30 @@
         <h2>Active Games</h2>
         <div id="adminGamesList"></div>
     </div>
+    <div id="dashboard" class="admin-controls">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1>Admin Dashboard</h1>
+            <md-text-button onclick="adminLogout()">Logout</md-text-button>
+        </div>
 
+        <div style="background: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+            <h3 style="margin-top:0;">Next Event Details</h3>
+            <md-filled-text-field id="eventTextInput" label="e.g. 17 Dec @ The Black Bee" style="width: 100%;"></md-filled-text-field>
+            <br><br>
+            <md-filled-button onclick="updateEventHeader()">Update Website Header</md-filled-button>
+        </div>
+
+        <div style="background: #ffebee; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; border: 1px solid #ef9a9a;">
+            <h3 style="margin-top:0; color: #c62828;">Danger Zone</h3>
+            <md-filled-button onclick="wipeEverything()" style="--md-sys-color-primary: #c62828;">
+                <md-icon slot="icon">delete_forever</md-icon>
+                Wipe ALL Games
+            </md-filled-button>
+        </div>
+
+        <h2>Active Games</h2>
+        <div id="adminGamesList"></div>
+    </div>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -149,6 +172,7 @@
 </body>
 
 </html>
+
 
 
 
